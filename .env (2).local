@@ -1,0 +1,8 @@
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=production_scheduling
+DB_PORT=3307
+
+JWT_SECRET=your-secret-key-change-this-in-production
+NEXT_PUBLIC_API_URL=http://localhost:3000

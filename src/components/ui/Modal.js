@@ -63,7 +63,6 @@ export default function Modal({
   showCloseButton = true,
 }) {
   const modalRef = useRef(null);
-  const previousActiveElement = useRef(null);
 
   // Handle escape key
   const handleEscape = useCallback(
@@ -87,37 +86,13 @@ export default function Modal({
 
   useEffect(() => {
     if (isOpen) {
-      // Store currently focused element
-      previousActiveElement.current = document.activeElement;
-
       // Prevent body scroll
       document.body.style.overflow = 'hidden';
 
       // Add escape listener
       document.addEventListener('keydown', handleEscape);
-
-      // Focus the first focusable element inside modal (input, button, etc.)
-      setTimeout(() => {
-        const focusableElements = modalRef.current?.querySelectorAll(
-          'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])'
-        );
-        if (focusableElements && focusableElements.length > 0) {
-          // Skip close button, focus the first form element
-          const firstInput = Array.from(focusableElements).find(
-            (el) => el.tagName !== 'BUTTON' || el.type === 'submit'
-          );
-          if (firstInput) {
-            firstInput.focus();
-          }
-        }
-      }, 100);
     } else {
       document.body.style.overflow = 'unset';
-
-      // Restore focus
-      if (previousActiveElement.current) {
-        previousActiveElement.current.focus();
-      }
     }
 
     return () => {

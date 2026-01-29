@@ -77,7 +77,7 @@ export default function LoginPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Production</h1>
-              <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Scheduling</h1>
+              <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Scheduling PRO</h1>
             </div>
           </div>
 
@@ -140,7 +140,7 @@ export default function LoginPage() {
           <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 sm:p-10 border border-white/20 shadow-2xl shadow-black/20">
             <div className="text-center mb-8">
               <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Selamat Datang!</h2>
-              <p className="text-slate-300">Silakan login untuk melanjutkan</p>
+              <p className="text-slate-300">Jangan lupa berdoa sebelum bekerja</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -255,10 +255,8 @@ export default function LoginPage() {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-300 mb-1">Default credentials:</p>
-                  <p className="text-sm font-mono bg-white/10 rounded px-2 py-1 inline-block text-cyan-300">
-                    admin / admin123
-                  </p>
+                  <p className="text-sm text-slate-300 mb-1">Contact your administrator for account access</p>
+                  
                 </div>
               </div>
             </div>
@@ -266,7 +264,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-center text-slate-400 text-sm mt-6">
-            © 2025 Production Scheduling System
+            © 2026 Production Scheduling System
           </p>
         </div>
       </div>

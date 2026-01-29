@@ -33,6 +33,9 @@ const SortIcon = ({ direction }) => {
   );
 };
 
+// Deterministic width patterns for skeleton (avoids hydration mismatch)
+const SKELETON_WIDTHS = [75, 85, 65, 90, 70, 80, 60, 95, 72, 88];
+
 // Loading Skeleton Component
 const LoadingSkeleton = ({ rows = 5, columns = 4 }) => (
   <div className="card overflow-hidden">
@@ -51,7 +54,10 @@ const LoadingSkeleton = ({ rows = 5, columns = 4 }) => (
           <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50">
             {[...Array(columns)].map((_, i) => (
               <th key={i} className="px-6 py-4">
-                <div className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${60 + Math.random() * 40}%` }} />
+                <div
+                  className="h-4 bg-gray-200 rounded animate-pulse"
+                  style={{ width: `${SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]}%` }}
+                />
               </th>
             ))}
           </tr>
@@ -64,7 +70,7 @@ const LoadingSkeleton = ({ rows = 5, columns = 4 }) => (
                   <div
                     className="h-4 bg-gray-100 rounded animate-pulse"
                     style={{
-                      width: `${50 + Math.random() * 50}%`,
+                      width: `${SKELETON_WIDTHS[(rowIndex + colIndex) % SKELETON_WIDTHS.length]}%`,
                       animationDelay: `${(rowIndex * columns + colIndex) * 50}ms`
                     }}
                   />

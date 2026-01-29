@@ -1,54 +1,84 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import mongoose from 'mongoose';
+import connectDB from '@/lib/mongodb';
+import Schedule from '@/models/Schedule';
+import User from '@/models/User';
+import Supplier from '@/models/Supplier';
+import Article from '@/models/Article';
 import { getUserFromToken } from '@/lib/auth';
+import { calculateAutoStatus } from '@/lib/scheduleUtils';
+
+const SCHEDULE_TYPE = 'bordir';
+
+// Helper function to validate MongoDB ObjectId
+function isValidObjectId(id) {
+  return mongoose.Types.ObjectId.isValid(id) && (typeof id === 'string' && id.length === 24);
+}
 
 // Fungsi untuk cek apakah supplier tersedia di rentang waktu tertentu
 async function isSupplierAvailable(supplierId, startDate, endDate, excludeId = null) {
-  let sql = `
-    SELECT COUNT(*) as count FROM schedule_bordir 
-    WHERE supplier_id = ? 
-    AND status NOT IN ('cancelled', 'completed')
-    AND (
-      (start_date <= ? AND end_date >= ?) OR
-      (start_date <= ? AND end_date >= ?) OR
-      (start_date >= ? AND end_date <= ?)
-    )
-  `;
-  
-  const params = [supplierId, startDate, startDate, endDate, endDate, startDate, endDate];
-  
-  if (excludeId) {
-    sql += ' AND id != ?';
-    params.push(excludeId);
+  if (!isValidObjectId(supplierId)) {
+    return true;
   }
-  
-  const result = await query(sql, params);
-  return result[0].count === 0;
+
+  const query = {
+    supplier_id: new mongoose.Types.ObjectId(supplierId),
+    schedule_type: SCHEDULE_TYPE,
+    status: { $nin: ['cancelled', 'completed'] },
+    $or: [
+      { start_date: { $lte: startDate }, end_date: { $gte: startDate } },
+      { start_date: { $lte: endDate }, end_date: { $gte: endDate } },
+      { start_date: { $gte: startDate }, end_date: { $lte: endDate } },
+    ],
+  };
+
+  if (excludeId && isValidObjectId(excludeId)) {
+    query._id = { $ne: new mongoose.Types.ObjectId(excludeId) };
+  }
+
+  const count = await Schedule.countDocuments(query);
+  return count === 0;
 }
 
-// GET - Ambil semua schedule potong
+// GET - Ambil semua schedule bordir
 export async function GET(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const schedules = await query(`
-      SELECT 
-        sp.*,
-        a.article_name as article_full_name,
-        u.full_name as pic_name,
-        s.supplier_name
-      FROM schedule_bordir sp
-      LEFT JOIN articles a ON sp.article_id = a.id
-      LEFT JOIN users u ON sp.pic_id = u.id
-      LEFT JOIN suppliers s ON sp.supplier_id = s.id
-      ORDER BY sp.start_date DESC
-    `);
+    await connectDB();
 
-    return NextResponse.json({ schedules });
+    const schedules = await Schedule.find({ schedule_type: SCHEDULE_TYPE })
+      .populate('pic_id', 'full_name')
+      .populate('supplier_id', 'supplier_name')
+      .populate('article_id', 'article_name')
+      .sort({ start_date: -1 });
+
+    // Transform data for frontend compatibility with auto status
+    const transformedSchedules = schedules.map((schedule) => {
+      const scheduleObj = schedule.toJSON();
+      const autoStatus = calculateAutoStatus(
+        scheduleObj.start_date,
+        scheduleObj.end_date,
+        scheduleObj.status
+      );
+
+      return {
+        ...scheduleObj,
+        status: autoStatus,
+        pic_name: schedule.pic_id?.full_name || null,
+        supplier_name: schedule.supplier_id?.supplier_name || null,
+        article_full_name: schedule.article_id?.article_name || null,
+        pic_id: schedule.pic_id?._id || schedule.pic_id,
+        supplier_id: schedule.supplier_id?._id || schedule.supplier_id,
+        article_id: schedule.article_id?._id || schedule.article_id,
+      };
+    });
+
+    return NextResponse.json({ schedules: transformedSchedules });
   } catch (error) {
     console.error('Get schedules error:', error);
     return NextResponse.json(
@@ -58,14 +88,16 @@ export async function GET(request) {
   }
 }
 
-// POST - Tambah schedule potong baru
+// POST - Tambah schedule bordir baru
 export async function POST(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const body = await request.json();
     const {
@@ -89,9 +121,29 @@ export async function POST(request) {
       );
     }
 
+    // Validasi ObjectId format
+    if (!isValidObjectId(article_id)) {
+      return NextResponse.json(
+        { error: 'Article ID tidak valid' },
+        { status: 400 }
+      );
+    }
+    if (!isValidObjectId(pic_id)) {
+      return NextResponse.json(
+        { error: 'PIC ID tidak valid' },
+        { status: 400 }
+      );
+    }
+    if (!isValidObjectId(supplier_id)) {
+      return NextResponse.json(
+        { error: 'Supplier ID tidak valid' },
+        { status: 400 }
+      );
+    }
+
     // Cek apakah supplier tersedia
-    const available = await isSupplierAvailable(supplier_id, start_date, end_date);
-    
+    const available = await isSupplierAvailable(supplier_id, new Date(start_date), new Date(end_date));
+
     if (!available) {
       return NextResponse.json(
         { error: 'Supplier tidak tersedia di rentang waktu yang dipilih' },
@@ -99,16 +151,23 @@ export async function POST(request) {
       );
     }
 
-    const result = await query(
-      `INSERT INTO schedule_bordir 
-       (article_id, article_name, description, quantity, pic_id, week_delivery, supplier_id, start_date, end_date, notes) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [article_id, article_name, description, quantity, pic_id, week_delivery, supplier_id, start_date, end_date, notes]
-    );
+    const newSchedule = await Schedule.create({
+      schedule_type: SCHEDULE_TYPE,
+      article_id,
+      article_name,
+      description,
+      quantity,
+      pic_id,
+      week_delivery,
+      supplier_id,
+      start_date: new Date(start_date),
+      end_date: new Date(end_date),
+      notes,
+    });
 
     return NextResponse.json({
       message: 'Schedule bordir berhasil ditambahkan',
-      scheduleId: result.insertId,
+      scheduleId: newSchedule._id,
     });
   } catch (error) {
     console.error('Create schedule error:', error);
@@ -119,14 +178,16 @@ export async function POST(request) {
   }
 }
 
-// PUT - Update schedule potong
+// PUT - Update schedule bordir
 export async function PUT(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const body = await request.json();
     const {
@@ -151,9 +212,35 @@ export async function PUT(request) {
       );
     }
 
+    // Validasi ObjectId format
+    if (!isValidObjectId(id)) {
+      return NextResponse.json(
+        { error: 'Schedule ID tidak valid' },
+        { status: 400 }
+      );
+    }
+    if (article_id && !isValidObjectId(article_id)) {
+      return NextResponse.json(
+        { error: 'Article ID tidak valid' },
+        { status: 400 }
+      );
+    }
+    if (pic_id && !isValidObjectId(pic_id)) {
+      return NextResponse.json(
+        { error: 'PIC ID tidak valid' },
+        { status: 400 }
+      );
+    }
+    if (supplier_id && !isValidObjectId(supplier_id)) {
+      return NextResponse.json(
+        { error: 'Supplier ID tidak valid' },
+        { status: 400 }
+      );
+    }
+
     // Cek apakah supplier tersedia (exclude schedule yang sedang diupdate)
-    const available = await isSupplierAvailable(supplier_id, start_date, end_date, id);
-    
+    const available = await isSupplierAvailable(supplier_id, new Date(start_date), new Date(end_date), id);
+
     if (!available) {
       return NextResponse.json(
         { error: 'Supplier tidak tersedia di rentang waktu yang dipilih' },
@@ -161,13 +248,19 @@ export async function PUT(request) {
       );
     }
 
-    await query(
-      `UPDATE schedule_bordir 
-       SET article_id = ?, article_name = ?, description = ?, quantity = ?, pic_id = ?, 
-           week_delivery = ?, supplier_id = ?, start_date = ?, end_date = ?, status = ?, notes = ?
-       WHERE id = ?`,
-      [article_id, article_name, description, quantity, pic_id, week_delivery, supplier_id, start_date, end_date, status, notes, id]
-    );
+    await Schedule.findByIdAndUpdate(id, {
+      article_id,
+      article_name,
+      description,
+      quantity,
+      pic_id,
+      week_delivery,
+      supplier_id,
+      start_date: new Date(start_date),
+      end_date: new Date(end_date),
+      status,
+      notes,
+    });
 
     return NextResponse.json({ message: 'Schedule bordir berhasil diupdate' });
   } catch (error) {
@@ -179,14 +272,16 @@ export async function PUT(request) {
   }
 }
 
-// DELETE - Hapus schedule potong
+// DELETE - Hapus schedule bordir
 export async function DELETE(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -198,7 +293,14 @@ export async function DELETE(request) {
       );
     }
 
-    await query('DELETE FROM schedule_bordir WHERE id = ?', [id]);
+    if (!isValidObjectId(id)) {
+      return NextResponse.json(
+        { error: 'Schedule ID tidak valid' },
+        { status: 400 }
+      );
+    }
+
+    await Schedule.findByIdAndDelete(id);
 
     return NextResponse.json({ message: 'Schedule bordir berhasil dihapus' });
   } catch (error) {

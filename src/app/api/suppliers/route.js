@@ -1,31 +1,29 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import connectDB from '@/lib/mongodb';
+import Supplier from '@/models/Supplier';
 import { getUserFromToken } from '@/lib/auth';
 
 // GET - Ambil semua suppliers atau filter by type
 export async function GET(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    await connectDB();
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
 
-    let suppliers;
-    
+    let query = { is_active: true };
+
     if (type) {
-      suppliers = await query(
-        'SELECT * FROM suppliers WHERE supplier_type = ? AND is_active = TRUE ORDER BY supplier_name',
-        [type]
-      );
-    } else {
-      suppliers = await query(
-        'SELECT * FROM suppliers WHERE is_active = TRUE ORDER BY supplier_type, supplier_name'
-      );
+      query.supplier_type = type;
     }
+
+    const suppliers = await Supplier.find(query).sort({ supplier_type: 1, supplier_name: 1 });
 
     return NextResponse.json({ suppliers });
   } catch (error) {
@@ -41,10 +39,12 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const body = await request.json();
     const { supplier_name, supplier_type, contact_person, phone, address } = body;
@@ -56,14 +56,17 @@ export async function POST(request) {
       );
     }
 
-    const result = await query(
-      'INSERT INTO suppliers (supplier_name, supplier_type, contact_person, phone, address) VALUES (?, ?, ?, ?, ?)',
-      [supplier_name, supplier_type, contact_person, phone, address]
-    );
+    const newSupplier = await Supplier.create({
+      supplier_name,
+      supplier_type,
+      contact_person,
+      phone,
+      address,
+    });
 
     return NextResponse.json({
       message: 'Supplier berhasil ditambahkan',
-      supplierId: result.insertId,
+      supplierId: newSupplier._id,
     });
   } catch (error) {
     console.error('Create supplier error:', error);
@@ -78,10 +81,12 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const body = await request.json();
     const { id, supplier_name, supplier_type, contact_person, phone, address, is_active } = body;
@@ -93,10 +98,14 @@ export async function PUT(request) {
       );
     }
 
-    await query(
-      'UPDATE suppliers SET supplier_name = ?, supplier_type = ?, contact_person = ?, phone = ?, address = ?, is_active = ? WHERE id = ?',
-      [supplier_name, supplier_type, contact_person, phone, address, is_active, id]
-    );
+    await Supplier.findByIdAndUpdate(id, {
+      supplier_name,
+      supplier_type,
+      contact_person,
+      phone,
+      address,
+      is_active,
+    });
 
     return NextResponse.json({ message: 'Supplier berhasil diupdate' });
   } catch (error) {
@@ -112,10 +121,12 @@ export async function PUT(request) {
 export async function DELETE(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -128,7 +139,7 @@ export async function DELETE(request) {
     }
 
     // Soft delete
-    await query('UPDATE suppliers SET is_active = FALSE WHERE id = ?', [id]);
+    await Supplier.findByIdAndUpdate(id, { is_active: false });
 
     return NextResponse.json({ message: 'Supplier berhasil dihapus' });
   } catch (error) {

@@ -1,19 +1,20 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import connectDB from '@/lib/mongodb';
+import Article from '@/models/Article';
 import { getUserFromToken } from '@/lib/auth';
 
 // GET - Ambil semua articles
 export async function GET(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const articles = await query(
-      'SELECT * FROM articles WHERE is_active = TRUE ORDER BY article_name'
-    );
+    await connectDB();
+
+    const articles = await Article.find({ is_active: true }).sort({ article_name: 1 });
 
     return NextResponse.json({ articles });
   } catch (error) {
@@ -29,10 +30,12 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const body = await request.json();
     const { article_name, description, category } = body;
@@ -44,14 +47,15 @@ export async function POST(request) {
       );
     }
 
-    const result = await query(
-      'INSERT INTO articles (article_name, description, category) VALUES (?, ?, ?)',
-      [article_name, description, category]
-    );
+    const newArticle = await Article.create({
+      article_name,
+      description,
+      category,
+    });
 
     return NextResponse.json({
       message: 'Artikel berhasil ditambahkan',
-      articleId: result.insertId,
+      articleId: newArticle._id,
     });
   } catch (error) {
     console.error('Create article error:', error);
@@ -66,10 +70,12 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const body = await request.json();
     const { id, article_name, description, category, is_active } = body;
@@ -81,10 +87,12 @@ export async function PUT(request) {
       );
     }
 
-    await query(
-      'UPDATE articles SET article_name = ?, description = ?, category = ?, is_active = ? WHERE id = ?',
-      [article_name, description, category, is_active, id]
-    );
+    await Article.findByIdAndUpdate(id, {
+      article_name,
+      description,
+      category,
+      is_active,
+    });
 
     return NextResponse.json({ message: 'Artikel berhasil diupdate' });
   } catch (error) {
@@ -100,10 +108,12 @@ export async function PUT(request) {
 export async function DELETE(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -115,7 +125,7 @@ export async function DELETE(request) {
       );
     }
 
-    await query('UPDATE articles SET is_active = FALSE WHERE id = ?', [id]);
+    await Article.findByIdAndUpdate(id, { is_active: false });
 
     return NextResponse.json({ message: 'Artikel berhasil dihapus' });
   } catch (error) {

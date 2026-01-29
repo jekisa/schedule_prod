@@ -4,7 +4,18 @@
       "Bash(npm install)",
       "Bash(npm run dev:*)",
       "Bash(npm install:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5N2FmZWNhZTIzZmNkNjJiYjMxNjRlZCIsInVzZXJuYW1lIjoiYWRtaW4iLCJmdWxsX25hbWUiOiJBZG1pbmlzdHJhdG9yIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2OTY2ODMwMywiZXhwIjoxNzcwMjczMTAzfQ.fmWgj7Bp-y2L89AujSIPFTX3FUCymJhuiT1VAZCH90A\")",
+      "Bash(__NEW_LINE_27bd3a9df17a0a2f__ echo \"=== Testing Dashboard ===\")",
+      "Bash(__NEW_LINE_27bd3a9df17a0a2f__ echo -e \"\\\\n\\\\n=== Testing Users ===\")",
+      "Bash(__NEW_LINE_27bd3a9df17a0a2f__ echo -e \"\\\\n\\\\n=== Testing Suppliers ===\")",
+      "Bash(__NEW_LINE_27bd3a9df17a0a2f__ echo -e \"\\\\n\\\\n=== Testing Articles ===\")",
+      "Bash(__NEW_LINE_9e45b065e9561b41__ echo \"=== Testing Schedule Potong ===\")",
+      "Bash(__NEW_LINE_9e45b065e9561b41__ echo -e \"\\\\n\\\\n=== Testing Schedule Jahit ===\")",
+      "Bash(__NEW_LINE_9e45b065e9561b41__ echo -e \"\\\\n\\\\n=== Testing Schedule Sablon ===\")",
+      "Bash(__NEW_LINE_9e45b065e9561b41__ echo -e \"\\\\n\\\\n=== Testing Schedule Bordir ===\")",
+      "Bash(npm run build:*)"
     ]
   }
 }

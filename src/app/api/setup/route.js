@@ -1,20 +1,23 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { query } from '@/lib/db';
+import connectDB from '@/lib/mongodb';
+import User from '@/models/User';
 
 export async function GET() {
   try {
+    await connectDB();
+
     // Hash password admin123
     const hashedPassword = await bcrypt.hash('admin123', 10);
 
     // Check if admin exists
-    const existingUsers = await query('SELECT id FROM users WHERE username = ?', ['admin']);
+    const existingUser = await User.findOne({ username: 'admin' });
 
-    if (existingUsers.length > 0) {
+    if (existingUser) {
       // Update existing admin password
-      await query(
-        'UPDATE users SET password = ? WHERE username = ?',
-        [hashedPassword, 'admin']
+      await User.findOneAndUpdate(
+        { username: 'admin' },
+        { password: hashedPassword }
       );
       return NextResponse.json({
         message: 'Admin password updated successfully',
@@ -23,10 +26,13 @@ export async function GET() {
       });
     } else {
       // Create new admin user
-      await query(
-        'INSERT INTO users (username, password, full_name, email, role) VALUES (?, ?, ?, ?, ?)',
-        ['admin', hashedPassword, 'Administrator', 'admin@example.com', 'admin']
-      );
+      await User.create({
+        username: 'admin',
+        password: hashedPassword,
+        full_name: 'Administrator',
+        email: 'admin@example.com',
+        role: 'admin'
+      });
       return NextResponse.json({
         message: 'Admin user created successfully',
         username: 'admin',

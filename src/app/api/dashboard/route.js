@@ -1,96 +1,70 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import connectDB from '@/lib/mongodb';
+import Schedule from '@/models/Schedule';
 import { getUserFromToken } from '@/lib/auth';
+import { calculateAutoStatus } from '@/lib/scheduleUtils';
 
 export async function GET(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Ambil semua schedule dari 4 tabel
-    const [potong, jahit, sablon, bordir] = await Promise.all([
-      query(`
-        SELECT 
-          sp.*,
-          'potong' as type,
-          a.article_name as article_full_name,
-          u.full_name as pic_name,
-          s.supplier_name
-        FROM schedule_potong sp
-        LEFT JOIN articles a ON sp.article_id = a.id
-        LEFT JOIN users u ON sp.pic_id = u.id
-        LEFT JOIN suppliers s ON sp.supplier_id = s.id
-        WHERE sp.status IN ('scheduled', 'in_progress')
-        ORDER BY sp.start_date ASC
-      `),
-      query(`
-        SELECT 
-          sj.*,
-          'jahit' as type,
-          a.article_name as article_full_name,
-          u.full_name as pic_name,
-          s.supplier_name
-        FROM schedule_jahit sj
-        LEFT JOIN articles a ON sj.article_id = a.id
-        LEFT JOIN users u ON sj.pic_id = u.id
-        LEFT JOIN suppliers s ON sj.supplier_id = s.id
-        WHERE sj.status IN ('scheduled', 'in_progress')
-        ORDER BY sj.start_date ASC
-      `),
-      query(`
-        SELECT 
-          ss.*,
-          'sablon' as type,
-          a.article_name as article_full_name,
-          u.full_name as pic_name,
-          s.supplier_name
-        FROM schedule_sablon ss
-        LEFT JOIN articles a ON ss.article_id = a.id
-        LEFT JOIN users u ON ss.pic_id = u.id
-        LEFT JOIN suppliers s ON ss.supplier_id = s.id
-        WHERE ss.status IN ('scheduled', 'in_progress')
-        ORDER BY ss.start_date ASC
-      `),
-      query(`
-        SELECT 
-          sb.*,
-          'bordir' as type,
-          a.article_name as article_full_name,
-          u.full_name as pic_name,
-          s.supplier_name
-        FROM schedule_bordir sb
-        LEFT JOIN articles a ON sb.article_id = a.id
-        LEFT JOIN users u ON sb.pic_id = u.id
-        LEFT JOIN suppliers s ON sb.supplier_id = s.id
-        WHERE sb.status IN ('scheduled', 'in_progress')
-        ORDER BY sb.start_date ASC
-      `)
-    ]);
+    await connectDB();
 
-    // Gabungkan semua schedule
-    const allSchedules = [...potong, ...jahit, ...sablon, ...bordir];
+    // Ambil semua schedule dari semua tipe (kecuali yang cancelled)
+    const schedules = await Schedule.find({
+      status: { $ne: 'cancelled' }
+    })
+      .populate('pic_id', 'full_name')
+      .populate('supplier_id', 'supplier_name')
+      .populate('article_id', 'article_name')
+      .sort({ start_date: 1 });
 
-    // Hitung statistik
+    // Transform data dengan auto status
+    const allSchedules = schedules.map((schedule) => {
+      const scheduleObj = schedule.toJSON();
+      const autoStatus = calculateAutoStatus(
+        scheduleObj.start_date,
+        scheduleObj.end_date,
+        scheduleObj.status
+      );
+
+      return {
+        ...scheduleObj,
+        status: autoStatus,
+        type: schedule.schedule_type,
+        pic_name: schedule.pic_id?.full_name || null,
+        supplier_name: schedule.supplier_id?.supplier_name || null,
+        article_full_name: schedule.article_id?.article_name || null,
+        pic_id: schedule.pic_id?._id || schedule.pic_id,
+        supplier_id: schedule.supplier_id?._id || schedule.supplier_id,
+        article_id: schedule.article_id?._id || schedule.article_id,
+      };
+    });
+
+    // Filter hanya yang scheduled atau in_progress untuk dashboard
+    const activeSchedules = allSchedules.filter(
+      (s) => s.status === 'scheduled' || s.status === 'in_progress'
+    );
+
+    // Hitung statistik berdasarkan auto status
     const stats = {
-      total: allSchedules.length,
-      potong: potong.length,
-      jahit: jahit.length,
-      sablon: sablon.length,
-      bordir: bordir.length,
-      scheduled: allSchedules.filter(s => s.status === 'scheduled').length,
-      in_progress: allSchedules.filter(s => s.status === 'in_progress').length,
+      total: activeSchedules.length,
+      potong: activeSchedules.filter((s) => s.schedule_type === 'potong').length,
+      jahit: activeSchedules.filter((s) => s.schedule_type === 'jahit').length,
+      sablon: activeSchedules.filter((s) => s.schedule_type === 'sablon').length,
+      bordir: activeSchedules.filter((s) => s.schedule_type === 'bordir').length,
+      scheduled: activeSchedules.filter((s) => s.status === 'scheduled').length,
+      in_progress: activeSchedules.filter((s) => s.status === 'in_progress').length,
     };
-
-    // Sort all schedules by start_date
-    const sortedSchedules = allSchedules.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
 
     return NextResponse.json({
       stats,
-      schedules: sortedSchedules,
-      upcomingSchedules: sortedSchedules,
+      schedules: activeSchedules,
+      upcomingSchedules: activeSchedules,
     });
   } catch (error) {
     console.error('Get dashboard data error:', error);

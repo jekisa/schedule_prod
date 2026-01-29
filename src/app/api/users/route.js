@@ -1,20 +1,23 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { query } from '@/lib/db';
+import connectDB from '@/lib/mongodb';
+import User from '@/models/User';
 import { getUserFromToken } from '@/lib/auth';
 
 // GET - Ambil semua users
 export async function GET(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const users = await query(
-      'SELECT id, username, full_name, email, role, created_at, updated_at FROM users ORDER BY created_at DESC'
-    );
+    await connectDB();
+
+    const users = await User.find()
+      .select('-password')
+      .sort({ created_at: -1 });
 
     return NextResponse.json({ users });
   } catch (error) {
@@ -30,10 +33,12 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const body = await request.json();
     const { username, password, full_name, email, role } = body;
@@ -46,13 +51,12 @@ export async function POST(request) {
       );
     }
 
-    // Cek apakah username sudah ada
-    const existingUsers = await query(
-      'SELECT id FROM users WHERE username = ? OR email = ?',
-      [username, email]
-    );
+    // Cek apakah username atau email sudah ada
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }]
+    });
 
-    if (existingUsers.length > 0) {
+    if (existingUser) {
       return NextResponse.json(
         { error: 'Username atau email sudah terdaftar' },
         { status: 400 }
@@ -63,14 +67,17 @@ export async function POST(request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Insert user baru
-    const result = await query(
-      'INSERT INTO users (username, password, full_name, email, role) VALUES (?, ?, ?, ?, ?)',
-      [username, hashedPassword, full_name, email, role || 'staff']
-    );
+    const newUser = await User.create({
+      username,
+      password: hashedPassword,
+      full_name,
+      email,
+      role: role || 'staff',
+    });
 
     return NextResponse.json({
       message: 'User berhasil ditambahkan',
-      userId: result.insertId,
+      userId: newUser._id,
     });
   } catch (error) {
     console.error('Create user error:', error);
@@ -85,10 +92,12 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const body = await request.json();
     const { id, username, password, full_name, email, role } = body;
@@ -101,12 +110,12 @@ export async function PUT(request) {
     }
 
     // Cek apakah username atau email sudah digunakan user lain
-    const existingUsers = await query(
-      'SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ?',
-      [username, email, id]
-    );
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }],
+      _id: { $ne: id }
+    });
 
-    if (existingUsers.length > 0) {
+    if (existingUser) {
       return NextResponse.json(
         { error: 'Username atau email sudah digunakan' },
         { status: 400 }
@@ -114,18 +123,13 @@ export async function PUT(request) {
     }
 
     // Update user
+    const updateData = { username, full_name, email, role };
+
     if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      await query(
-        'UPDATE users SET username = ?, password = ?, full_name = ?, email = ?, role = ? WHERE id = ?',
-        [username, hashedPassword, full_name, email, role, id]
-      );
-    } else {
-      await query(
-        'UPDATE users SET username = ?, full_name = ?, email = ?, role = ? WHERE id = ?',
-        [username, full_name, email, role, id]
-      );
+      updateData.password = await bcrypt.hash(password, 10);
     }
+
+    await User.findByIdAndUpdate(id, updateData);
 
     return NextResponse.json({ message: 'User berhasil diupdate' });
   } catch (error) {
@@ -141,10 +145,12 @@ export async function PUT(request) {
 export async function DELETE(request) {
   try {
     const user = getUserFromToken(request);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await connectDB();
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -156,7 +162,7 @@ export async function DELETE(request) {
       );
     }
 
-    await query('DELETE FROM users WHERE id = ?', [id]);
+    await User.findByIdAndDelete(id);
 
     return NextResponse.json({ message: 'User berhasil dihapus' });
   } catch (error) {

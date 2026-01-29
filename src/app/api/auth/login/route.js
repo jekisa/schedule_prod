@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { query } from '@/lib/db';
+import connectDB from '@/lib/mongodb';
+import User from '@/models/User';
 import { generateToken } from '@/lib/auth';
 
 export async function POST(request) {
   try {
+    await connectDB();
+
     const body = await request.json();
     const { username, password } = body;
 
@@ -16,19 +19,14 @@ export async function POST(request) {
     }
 
     // Cari user berdasarkan username
-    const users = await query(
-      'SELECT * FROM users WHERE username = ?',
-      [username]
-    );
+    const user = await User.findOne({ username });
 
-    if (users.length === 0) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Username atau password salah' },
         { status: 401 }
       );
     }
-
-    const user = users[0];
 
     // Verifikasi password
     const passwordMatch = await bcrypt.compare(password, user.password);
@@ -44,12 +42,13 @@ export async function POST(request) {
     const token = generateToken(user);
 
     // Return user data (tanpa password) dan token
-    const { password: _, ...userWithoutPassword } = user;
+    const userObj = user.toJSON();
+    delete userObj.password;
 
     return NextResponse.json({
       message: 'Login berhasil',
       token,
-      user: userWithoutPassword,
+      user: userObj,
     });
   } catch (error) {
     console.error('Login error:', error);

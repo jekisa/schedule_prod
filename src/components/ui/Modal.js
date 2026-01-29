@@ -3,10 +3,11 @@
 import { useEffect, useCallback, useRef } from 'react';
 
 const sizeClasses = {
-  sm: 'max-w-md',
-  default: 'max-w-lg',
-  lg: 'max-w-2xl',
-  xl: 'max-w-4xl',
+  sm: 'max-w-[95vw] sm:max-w-md',
+  md: 'max-w-[95vw] sm:max-w-xl',
+  default: 'max-w-[95vw] sm:max-w-lg',
+  lg: 'max-w-[95vw] sm:max-w-2xl',
+  xl: 'max-w-[95vw] sm:max-w-4xl',
   full: 'max-w-[95vw] md:max-w-[90vw]',
 };
 

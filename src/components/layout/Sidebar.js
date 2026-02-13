@@ -17,6 +17,15 @@ const navigation = [
         ),
       },
       {
+        name: 'Gantt Chart',
+        href: '/dashboard/gantt',
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h10M4 10h16M4 14h12M4 18h14" />
+          </svg>
+        ),
+      },
+      {
         name: 'Input Schedule',
         href: '/dashboard/schedules/new',
         icon: (
@@ -158,7 +167,7 @@ export default function Sidebar({ isOpen, onClose }) {
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-gray-900 animate-pulse" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-white tracking-tight">JQSA</h1>
+              <h1 className="font-bold text-lg text-white tracking-tight">PT. GNP</h1>
               <p className="text-xs text-gray-400 font-medium">Production Scheduler</p>
             </div>
           </div>

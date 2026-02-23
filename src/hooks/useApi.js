@@ -170,6 +170,20 @@ export const useDeleteArticle = () => {
   });
 };
 
+// Report Schedules
+export const useReportSchedules = (type = null, status = null) => {
+  return useQuery({
+    queryKey: ['report-schedules', type, status],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (type) params.set('type', type);
+      if (status) params.set('status', status);
+      const query = params.toString();
+      return fetchWithAuth(`/api/reports/schedules${query ? `?${query}` : ''}`);
+    },
+  });
+};
+
 // Schedules
 export const useSchedules = (type) => {
   return useQuery({

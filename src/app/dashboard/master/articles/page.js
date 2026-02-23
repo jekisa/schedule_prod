@@ -26,7 +26,14 @@ export default function ArticlesPage() {
     article_name: '',
     description: '',
     category: '',
+    brand: '',
+    buyer: '',
+    week_delivery: '',
+    co_qty: '',
+    co_price: '',
   });
+
+  const coTotal = (Number(formData.co_qty) || 0) * (Number(formData.co_price) || 0);
 
   const { data, isLoading } = useArticles();
   const createMutation = useCreateArticle();
@@ -89,6 +96,75 @@ export default function ArticlesPage() {
         },
       },
       {
+        accessorKey: 'brand',
+        header: 'Brand',
+        cell: ({ getValue }) => (
+          <span className="text-gray-700 text-sm">{getValue() || <span className="text-gray-400">-</span>}</span>
+        ),
+      },
+      {
+        accessorKey: 'buyer',
+        header: 'Buyer',
+        cell: ({ getValue }) => (
+          <span className="text-gray-700 text-sm">{getValue() || <span className="text-gray-400">-</span>}</span>
+        ),
+      },
+      {
+        accessorKey: 'week_delivery',
+        header: 'Week Delivery',
+        cell: ({ getValue }) => {
+          const v = getValue();
+          if (!v) return <span className="text-gray-400">-</span>;
+          return (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-medium">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {v}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: 'co_qty',
+        header: 'CO QTY',
+        cell: ({ getValue }) => {
+          const v = getValue();
+          if (!v && v !== 0) return <span className="text-gray-400">-</span>;
+          return (
+            <span className="text-sm font-medium text-gray-700">
+              {Number(v).toLocaleString('id-ID')}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: 'co_price',
+        header: 'CO Price',
+        cell: ({ getValue }) => {
+          const v = getValue();
+          if (!v && v !== 0) return <span className="text-gray-400">-</span>;
+          return (
+            <span className="text-sm text-gray-700">
+              {Number(v).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: 'co_total',
+        header: 'CO Total',
+        cell: ({ getValue }) => {
+          const v = getValue();
+          if (!v && v !== 0) return <span className="text-gray-400">-</span>;
+          return (
+            <span className="text-sm font-semibold text-emerald-700">
+              {Number(v).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+            </span>
+          );
+        },
+      },
+      {
         accessorKey: 'is_active',
         header: 'Status',
         cell: ({ getValue }) => {
@@ -99,31 +175,6 @@ export default function ArticlesPage() {
               <Badge variant={isActive ? 'green' : 'gray'} size="sm">
                 {isActive ? 'Aktif' : 'Nonaktif'}
               </Badge>
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: 'createdAt',
-        header: 'Dibuat',
-        cell: ({ getValue }) => {
-          const date = getValue();
-          if (!date) return <span className="text-gray-400">-</span>;
-
-          const formatted = new Date(date).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-          });
-
-          return (
-            <div className="flex items-center gap-2 text-gray-600">
-              <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
-                <svg className="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <span className="text-sm">{formatted}</span>
             </div>
           );
         },
@@ -164,6 +215,11 @@ export default function ArticlesPage() {
       article_name: '',
       description: '',
       category: '',
+      brand: '',
+      buyer: '',
+      week_delivery: '',
+      co_qty: '',
+      co_price: '',
     });
   };
 
@@ -173,6 +229,11 @@ export default function ArticlesPage() {
       article_name: article.article_name,
       description: article.description || '',
       category: article.category || '',
+      brand: article.brand || '',
+      buyer: article.buyer || '',
+      week_delivery: article.week_delivery || '',
+      co_qty: article.co_qty ?? '',
+      co_price: article.co_price ?? '',
     });
     setEditMode(true);
     setShowModal(true);
@@ -310,7 +371,7 @@ export default function ArticlesPage() {
         }}
         title={editMode ? 'Edit Artikel' : 'Tambah Artikel Baru'}
         subtitle={editMode ? 'Perbarui informasi artikel' : 'Isi data artikel baru'}
-        size="md"
+        size="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="form-group">
@@ -360,6 +421,83 @@ export default function ArticlesPage() {
             <p className="text-xs text-gray-500 mt-1">Ketik kategori atau pilih dari saran</p>
           </div>
 
+          {/* Brand & Buyer */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="form-group">
+              <label className="label">Brand</label>
+              <input
+                type="text"
+                value={formData.brand}
+                onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                className="input rounded-xl"
+                placeholder="Nama brand"
+              />
+            </div>
+            <div className="form-group">
+              <label className="label">Buyer</label>
+              <input
+                type="text"
+                value={formData.buyer}
+                onChange={(e) => setFormData({ ...formData, buyer: e.target.value })}
+                className="input rounded-xl"
+                placeholder="Nama buyer"
+              />
+            </div>
+          </div>
+
+          {/* Week Delivery */}
+          <div className="form-group">
+            <label className="label">Week Delivery</label>
+            <input
+              type="text"
+              value={formData.week_delivery}
+              onChange={(e) => setFormData({ ...formData, week_delivery: e.target.value })}
+              className="input rounded-xl"
+              placeholder="contoh: W01/2026"
+            />
+          </div>
+
+          {/* CO QTY & CO Price */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="form-group">
+              <label className="label">CO QTY</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.co_qty}
+                onChange={(e) => setFormData({ ...formData, co_qty: e.target.value })}
+                className="input rounded-xl"
+                placeholder="0"
+              />
+            </div>
+            <div className="form-group">
+              <label className="label">CO Price (Rp)</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.co_price}
+                onChange={(e) => setFormData({ ...formData, co_price: e.target.value })}
+                className="input rounded-xl"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          {/* CO Total (auto-calculated) */}
+          <div className="form-group">
+            <label className="label">CO Total</label>
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200">
+              <svg className="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span className="text-lg font-bold text-emerald-700">
+                {coTotal.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+              </span>
+              <span className="text-xs text-emerald-500 ml-auto">CO QTY × CO Price</span>
+            </div>
+          </div>
+
+          {/* Deskripsi */}
           <div className="form-group">
             <label className="label">Deskripsi</label>
             <div className="relative">

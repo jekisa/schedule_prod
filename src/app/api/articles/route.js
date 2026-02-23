@@ -38,7 +38,7 @@ export async function POST(request) {
     await connectDB();
 
     const body = await request.json();
-    const { article_name, description, category } = body;
+    const { article_name, description, category, brand, buyer, week_delivery, co_qty, co_price } = body;
 
     if (!article_name) {
       return NextResponse.json(
@@ -47,10 +47,19 @@ export async function POST(request) {
       );
     }
 
+    const qty = Number(co_qty) || 0;
+    const price = Number(co_price) || 0;
+
     const newArticle = await Article.create({
       article_name,
       description,
       category,
+      brand,
+      buyer,
+      week_delivery: week_delivery || null,
+      co_qty: qty,
+      co_price: price,
+      co_total: qty * price,
     });
 
     return NextResponse.json({
@@ -78,7 +87,7 @@ export async function PUT(request) {
     await connectDB();
 
     const body = await request.json();
-    const { id, article_name, description, category, is_active } = body;
+    const { id, article_name, description, category, brand, buyer, week_delivery, co_qty, co_price, is_active } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -87,10 +96,19 @@ export async function PUT(request) {
       );
     }
 
+    const qty = Number(co_qty) || 0;
+    const price = Number(co_price) || 0;
+
     await Article.findByIdAndUpdate(id, {
       article_name,
       description,
       category,
+      brand,
+      buyer,
+      week_delivery: week_delivery || null,
+      co_qty: qty,
+      co_price: price,
+      co_total: qty * price,
       is_active,
     });
 

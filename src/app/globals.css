@@ -1375,11 +1375,21 @@
 }
 
 /* ==================== PRINT STYLES ==================== */
+
+/* Screen: hide report-specific print elements */
+.report-print-header,
+.report-print-filter-info,
+.report-print-footer,
+.report-print-table {
+  display: none;
+}
+
 @media print {
   .sidebar,
   .header,
   .btn,
-  .modal-overlay {
+  .modal-overlay,
+  .no-print {
     display: none !important;
   }
 
@@ -1390,5 +1400,47 @@
   .card {
     box-shadow: none;
     border: 1px solid #ddd;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .page-container {
+    padding: 0.5rem !important;
+  }
+
+  /* Report page print elements */
+  .report-print-table {
+    display: block !important;
+  }
+
+  .report-print-header {
+    display: block !important;
+    margin-bottom: 16px;
+  }
+
+  .report-print-filter-info {
+    display: block !important;
+    padding: 6px 12px;
+    font-size: 11px;
+    color: #64748b;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .report-print-footer {
+    display: block !important;
+    text-align: center;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 24px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .table th,
+  .table td {
+    font-size: 11px !important;
+    padding: 5px 8px !important;
   }
 }

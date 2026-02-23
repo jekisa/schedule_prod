@@ -15,6 +15,30 @@ const ArticleSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    brand: {
+      type: String,
+      trim: true,
+    },
+    buyer: {
+      type: String,
+      trim: true,
+    },
+    week_delivery: {
+      type: String,
+      trim: true,
+    },
+    co_qty: {
+      type: Number,
+      default: 0,
+    },
+    co_price: {
+      type: Number,
+      default: 0,
+    },
+    co_total: {
+      type: Number,
+      default: 0,
+    },
     is_active: {
       type: Boolean,
       default: true,

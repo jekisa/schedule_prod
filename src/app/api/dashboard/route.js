@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Schedule from '@/models/Schedule';
+import '@/models/Supplier';
+import '@/models/User';
+import '@/models/Article';
 import { getUserFromToken } from '@/lib/auth';
 import { calculateAutoStatus } from '@/lib/scheduleUtils';
 

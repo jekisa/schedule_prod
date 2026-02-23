@@ -2,13 +2,26 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useNearDeadlineAlerts } from '@/hooks/useApi';
+
+const TYPE_COLORS = {
+  potong:  { bg: 'bg-blue-100',   text: 'text-blue-700',   label: 'Potong'  },
+  jahit:   { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Jahit'   },
+  sablon:  { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Sablon'  },
+  bordir:  { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Bordir'  },
+};
 
 export default function Header({ onMenuClick, title, subtitle }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const dropdownRef = useRef(null);
+  const notifRef = useRef(null);
+
+  const { count: alertCount, alerts } = useNearDeadlineAlerts(2);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -25,6 +38,9 @@ export default function Header({ onMenuClick, title, subtitle }) {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setShowNotifications(false);
       }
     };
 
@@ -108,13 +124,112 @@ export default function Header({ onMenuClick, title, subtitle }) {
               </button>
             </div>
 
-            {/* Notifications - Optional */}
-            <button className="relative p-2.5 rounded-xl hover:bg-gray-100 transition-colors">
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
+            {/* Notifications */}
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={() => setShowNotifications((v) => !v)}
+                className="relative p-2.5 rounded-xl hover:bg-gray-100 transition-colors"
+                title={alertCount > 0 ? `${alertCount} jadwal mendekati batas waktu` : 'Notifikasi'}
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                {alertCount > 0 && (
+                  <>
+                    <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                      {alertCount > 9 ? '9+' : alertCount}
+                    </span>
+                    <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-amber-400 rounded-full animate-ping opacity-60" />
+                  </>
+                )}
+              </button>
+
+              {/* Notification dropdown */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
+                  {/* Header */}
+                  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900">Notifikasi Jadwal</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">Sedang proses & berakhir ≤ 2 hari</p>
+                    </div>
+                    {alertCount > 0 && (
+                      <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">
+                        {alertCount} jadwal
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Alert list */}
+                  <div className="max-h-72 overflow-y-auto">
+                    {alertCount === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                        <svg className="w-10 h-10 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-sm font-medium">Semua jadwal on track</p>
+                        <p className="text-xs mt-0.5">Tidak ada yang mendekati batas waktu</p>
+                      </div>
+                    ) : (
+                      <ul className="divide-y divide-gray-50">
+                        {alerts.map((s) => {
+                          const tc = TYPE_COLORS[s.type] || {};
+                          const isOverdue = s.daysLeft < 0;
+                          const isToday = s.daysLeft === 0;
+                          return (
+                            <li key={`${s.type}-${s.id}`}>
+                              <Link
+                                href={`/dashboard/schedules/${s.type}`}
+                                onClick={() => setShowNotifications(false)}
+                                className="flex items-start gap-3 px-4 py-3 hover:bg-amber-50/60 transition-colors"
+                              >
+                                {/* Urgency indicator */}
+                                <div className={`mt-0.5 flex-shrink-0 w-2 h-2 rounded-full ${isOverdue ? 'bg-red-500' : isToday ? 'bg-amber-500 animate-pulse' : 'bg-amber-400'}`} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm font-semibold text-gray-900 truncate">{s.article_name}</span>
+                                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${tc.bg} ${tc.text}`}>
+                                      {tc.label || s.type}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-xs text-gray-500">
+                                      Selesai: {new Date(s.end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    </span>
+                                  </div>
+                                </div>
+                                <span className={`flex-shrink-0 text-xs font-bold px-2 py-1 rounded-lg ${
+                                  isOverdue
+                                    ? 'bg-red-100 text-red-600'
+                                    : isToday
+                                    ? 'bg-amber-100 text-amber-700'
+                                    : 'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                  {isOverdue ? `${Math.abs(s.daysLeft)}h terlambat` : isToday ? 'Hari ini' : `${s.daysLeft}h lagi`}
+                                </span>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  {alertCount > 0 && (
+                    <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50/80">
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setShowNotifications(false)}
+                        className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                      >
+                        Lihat semua jadwal →
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* User dropdown */}
             <div className="relative" ref={dropdownRef}>

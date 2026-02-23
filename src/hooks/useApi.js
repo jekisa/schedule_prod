@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const getToken = () => {
@@ -34,6 +35,37 @@ export const useDashboard = () => {
     queryKey: ['dashboard'],
     queryFn: () => fetchWithAuth('/api/dashboard'),
   });
+};
+
+// Near-deadline alerts: in_progress schedules finishing within thresholdDays
+export const useNearDeadlineAlerts = (thresholdDays = 2) => {
+  const { data } = useDashboard();
+
+  return useMemo(() => {
+    const schedules = data?.upcomingSchedules || [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const alerts = schedules
+      .filter((s) => {
+        if (s.status !== 'in_progress') return false;
+        const endDate = new Date(s.end_date);
+        endDate.setHours(0, 0, 0, 0);
+        const daysLeft = Math.round((endDate - today) / (1000 * 60 * 60 * 24));
+        return daysLeft <= thresholdDays;
+      })
+      .map((s) => {
+        const endDate = new Date(s.end_date);
+        endDate.setHours(0, 0, 0, 0);
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const daysLeft = Math.round((endDate - now) / (1000 * 60 * 60 * 24));
+        return { ...s, daysLeft };
+      })
+      .sort((a, b) => a.daysLeft - b.daysLeft);
+
+    return { count: alerts.length, alerts };
+  }, [data, thresholdDays]);
 };
 
 // Users

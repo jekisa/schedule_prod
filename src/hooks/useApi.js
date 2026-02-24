@@ -170,6 +170,38 @@ export const useDeleteArticle = () => {
   });
 };
 
+// Ingredients
+export const useIngredients = () => {
+  return useQuery({
+    queryKey: ['ingredients'],
+    queryFn: () => fetchWithAuth('/api/ingredients'),
+  });
+};
+
+export const useCreateIngredient = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => fetchWithAuth('/api/ingredients', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ingredients'] }),
+  });
+};
+
+export const useUpdateIngredient = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => fetchWithAuth('/api/ingredients', { method: 'PUT', body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ingredients'] }),
+  });
+};
+
+export const useDeleteIngredient = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => fetchWithAuth(`/api/ingredients?id=${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ingredients'] }),
+  });
+};
+
 // Report Schedules
 export const useReportSchedules = (type = null, status = null) => {
   return useQuery({

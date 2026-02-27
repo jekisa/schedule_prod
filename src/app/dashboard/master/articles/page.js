@@ -49,20 +49,9 @@ export default function ArticlesPage() {
         header: 'Artikel',
         cell: ({ row }) => {
           const article = row.original;
-          const category = article.category || 'default';
-          const config = categoryConfig[category] || categoryConfig.default;
-          const initials = article.article_name
-            .split(' ')
-            .map((n) => n[0])
-            .join('')
-            .substring(0, 2)
-            .toUpperCase();
 
           return (
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl ${config.lightColor} ${config.textColor} flex items-center justify-center font-semibold text-sm shadow-sm`}>
-                {initials}
-              </div>
               <div>
                 <div className="font-semibold text-gray-900">{article.article_name}</div>
                 {article.description && (
@@ -82,16 +71,8 @@ export default function ArticlesPage() {
           const category = getValue();
           if (!category) return <span className="text-gray-400">-</span>;
 
-          const config = categoryConfig[category] || categoryConfig.default;
           return (
-            <div className="flex items-center gap-2">
-              <div className={`w-7 h-7 rounded-lg ${config.lightColor} flex items-center justify-center`}>
-                <svg className={`w-4 h-4 ${config.textColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                </svg>
-              </div>
-              <Badge variant="blue" size="sm">{category}</Badge>
-            </div>
+            <Badge variant="blue" size="sm">{category}</Badge>
           );
         },
       },
@@ -194,6 +175,15 @@ export default function ArticlesPage() {
               </svg>
             </button>
             <button
+              onClick={() => handleDuplicate(row.original)}
+              className="p-2 rounded-lg text-amber-600 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+              title="Duplikat artikel"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
+            <button
               onClick={() => openDeleteModal(row.original)}
               className="p-2 rounded-lg text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
               title="Hapus artikel"
@@ -221,6 +211,22 @@ export default function ArticlesPage() {
       co_qty: '',
       co_price: '',
     });
+  };
+
+  const handleDuplicate = (article) => {
+    setFormData({
+      id: '',
+      article_name: `${article.article_name} - Copy`,
+      description: article.description || '',
+      category: article.category || '',
+      brand: article.brand || '',
+      buyer: article.buyer || '',
+      week_delivery: article.week_delivery || '',
+      co_qty: article.co_qty ?? '',
+      co_price: article.co_price ?? '',
+    });
+    setEditMode(false);
+    setShowModal(true);
   };
 
   const handleEdit = (article) => {

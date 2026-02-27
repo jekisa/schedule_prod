@@ -51,14 +51,7 @@ export default function UsersPage() {
           accessorKey: 'username',
           header: 'Username',
           cell: ({ getValue }) => (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-                <span className="text-primary-700 font-semibold text-sm">
-                  {getValue()?.charAt(0)?.toUpperCase() || 'U'}
-                </span>
-              </div>
-              <span className="font-semibold text-gray-900">{getValue()}</span>
-            </div>
+            <span className="font-semibold text-gray-900">{getValue()}</span>
           ),
         },
         {

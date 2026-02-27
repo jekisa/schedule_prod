@@ -119,11 +119,6 @@ export default function SchedulePage({ type }) {
         header: 'Artikel',
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center flex-shrink-0`}>
-              <span className="text-white font-bold text-sm">
-                {row.original.article_name?.charAt(0)?.toUpperCase() || 'A'}
-              </span>
-            </div>
             <div>
               <div className="font-semibold text-gray-900">{row.original.article_name}</div>
               {row.original.description && (

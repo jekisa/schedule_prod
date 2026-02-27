@@ -5,7 +5,10 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import DataTable from '@/components/ui/DataTable';
 import Modal, { ConfirmModal } from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
-import { useArticles, useCreateArticle, useUpdateArticle, useDeleteArticle } from '@/hooks/useApi';
+import {
+  useArticles, useCreateArticle, useUpdateArticle, useDeleteArticle,
+  useMasterCategories, useBrands, useBuyers, useWindows,
+} from '@/hooks/useApi';
 
 // Category config with colors
 const categoryConfig = {
@@ -39,6 +42,16 @@ export default function ArticlesPage() {
   const createMutation = useCreateArticle();
   const updateMutation = useUpdateArticle();
   const deleteMutation = useDeleteArticle();
+
+  const { data: categoriesData } = useMasterCategories();
+  const { data: brandsData } = useBrands();
+  const { data: buyersData } = useBuyers();
+  const { data: windowsData } = useWindows();
+
+  const categoryOptions = (categoriesData?.categories || []).map((c) => c.category_name);
+  const brandOptions = (brandsData?.brands || []).map((b) => b.brand_name);
+  const buyerOptions = (buyersData?.buyers || []).map((b) => b.buyer_name);
+  const windowOptions = (windowsData?.windows || []).map((w) => w.window_name);
 
   const articles = data?.articles || [];
 
@@ -402,65 +415,110 @@ export default function ArticlesPage() {
           <div className="form-group">
             <label className="label">Kategori</label>
             <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
-              <input
-                type="text"
+              <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="input rounded-xl pl-10"
-                placeholder="contoh: Kaos, Jaket, Kemeja, Celana"
-                list="category-suggestions"
-              />
-              <datalist id="category-suggestions">
-                <option value="Kaos" />
-                <option value="Jaket" />
-                <option value="Kemeja" />
-                <option value="Celana" />
-                <option value="Sweater" />
-                <option value="Hoodie" />
-              </datalist>
+                className="input rounded-xl pl-10 pr-8 appearance-none"
+              >
+                <option value="">-- Pilih Kategori --</option>
+                {categoryOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Ketik kategori atau pilih dari saran</p>
+            {categoryOptions.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">Belum ada kategori. Tambah di Settings → Master Category.</p>
+            )}
           </div>
 
           {/* Brand & Buyer */}
           <div className="grid grid-cols-2 gap-4">
             <div className="form-group">
               <label className="label">Brand</label>
-              <input
-                type="text"
-                value={formData.brand}
-                onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                className="input rounded-xl"
-                placeholder="Nama brand"
-              />
+              <div className="relative">
+                <select
+                  value={formData.brand}
+                  onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                  className="input rounded-xl pr-8 appearance-none"
+                >
+                  <option value="">-- Pilih Brand --</option>
+                  {brandOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+              {brandOptions.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">Tambah di Settings → Master Brand.</p>
+              )}
             </div>
             <div className="form-group">
               <label className="label">Buyer</label>
-              <input
-                type="text"
-                value={formData.buyer}
-                onChange={(e) => setFormData({ ...formData, buyer: e.target.value })}
-                className="input rounded-xl"
-                placeholder="Nama buyer"
-              />
+              <div className="relative">
+                <select
+                  value={formData.buyer}
+                  onChange={(e) => setFormData({ ...formData, buyer: e.target.value })}
+                  className="input rounded-xl pr-8 appearance-none"
+                >
+                  <option value="">-- Pilih Buyer --</option>
+                  {buyerOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+              {buyerOptions.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">Tambah di Settings → Master Buyer.</p>
+              )}
             </div>
           </div>
 
           {/* Week Delivery */}
           <div className="form-group">
             <label className="label">Week Delivery</label>
-            <input
-              type="text"
-              value={formData.week_delivery}
-              onChange={(e) => setFormData({ ...formData, week_delivery: e.target.value })}
-              className="input rounded-xl"
-              placeholder="contoh: W01/2026"
-            />
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <select
+                value={formData.week_delivery}
+                onChange={(e) => setFormData({ ...formData, week_delivery: e.target.value })}
+                className="input rounded-xl pl-10 pr-8 appearance-none"
+              >
+                <option value="">-- Pilih Week Delivery --</option>
+                {windowOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+            {windowOptions.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">Belum ada window. Tambah di Settings → Master Window.</p>
+            )}
           </div>
 
           {/* CO QTY & CO Price */}
@@ -499,7 +557,6 @@ export default function ArticlesPage() {
               <span className="text-lg font-bold text-emerald-700">
                 {coTotal.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
               </span>
-              <span className="text-xs text-emerald-500 ml-auto">CO QTY × CO Price</span>
             </div>
           </div>
 

@@ -202,6 +202,134 @@ export const useDeleteIngredient = () => {
   });
 };
 
+// Settings - Master Windows
+export const useWindows = () => {
+  return useQuery({
+    queryKey: ['settings-windows'],
+    queryFn: () => fetchWithAuth('/api/settings/windows'),
+  });
+};
+
+export const useCreateWindow = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => fetchWithAuth('/api/settings/windows', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings-windows'] }),
+  });
+};
+
+export const useUpdateWindow = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => fetchWithAuth('/api/settings/windows', { method: 'PUT', body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings-windows'] }),
+  });
+};
+
+export const useDeleteWindow = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => fetchWithAuth(`/api/settings/windows?id=${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings-windows'] }),
+  });
+};
+
+// Settings - Master Categories
+export const useMasterCategories = () => {
+  return useQuery({
+    queryKey: ['settings-categories'],
+    queryFn: () => fetchWithAuth('/api/settings/categories'),
+  });
+};
+
+export const useCreateMasterCategory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => fetchWithAuth('/api/settings/categories', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings-categories'] }),
+  });
+};
+
+export const useUpdateMasterCategory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => fetchWithAuth('/api/settings/categories', { method: 'PUT', body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings-categories'] }),
+  });
+};
+
+export const useDeleteMasterCategory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => fetchWithAuth(`/api/settings/categories?id=${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings-categories'] }),
+  });
+};
+
+// Settings - Master Buyers
+export const useBuyers = () => {
+  return useQuery({
+    queryKey: ['settings-buyers'],
+    queryFn: () => fetchWithAuth('/api/settings/buyers'),
+  });
+};
+
+export const useCreateBuyer = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => fetchWithAuth('/api/settings/buyers', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings-buyers'] }),
+  });
+};
+
+export const useUpdateBuyer = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => fetchWithAuth('/api/settings/buyers', { method: 'PUT', body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings-buyers'] }),
+  });
+};
+
+export const useDeleteBuyer = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => fetchWithAuth(`/api/settings/buyers?id=${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings-buyers'] }),
+  });
+};
+
+// Settings - Master Brands
+export const useBrands = () => {
+  return useQuery({
+    queryKey: ['settings-brands'],
+    queryFn: () => fetchWithAuth('/api/settings/brands'),
+  });
+};
+
+export const useCreateBrand = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => fetchWithAuth('/api/settings/brands', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings-brands'] }),
+  });
+};
+
+export const useUpdateBrand = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => fetchWithAuth('/api/settings/brands', { method: 'PUT', body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings-brands'] }),
+  });
+};
+
+export const useDeleteBrand = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => fetchWithAuth(`/api/settings/brands?id=${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings-brands'] }),
+  });
+};
+
 // Report Schedules
 export const useReportSchedules = (type = null, status = null) => {
   return useQuery({

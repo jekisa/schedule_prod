@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { TypeBadge } from '@/components/ui/Badge';
-import { useArticles, useSuppliers, useUsers, useCreateSchedule } from '@/hooks/useApi';
+import { useArticles, useSuppliers, useUsers, useCreateSchedule, useWindows } from '@/hooks/useApi';
 
 const scheduleTypes = [
   {
@@ -90,6 +90,7 @@ export default function NewSchedulePage() {
   const { data: articlesData, isLoading: articlesLoading } = useArticles();
   const { data: suppliersData, isLoading: suppliersLoading } = useSuppliers();
   const { data: usersData, isLoading: usersLoading } = useUsers();
+  const { data: windowsData, isLoading: windowsLoading } = useWindows();
 
   // Get current user from localStorage and auto-fill PIC
   useEffect(() => {
@@ -114,8 +115,9 @@ export default function NewSchedulePage() {
   const articles = articlesData?.articles || [];
   const suppliers = suppliersData?.suppliers || [];
   const users = usersData?.users || [];
+  const windows = (windowsData?.windows || []).map((w) => w.window_name);
 
-  const isLoading = articlesLoading || suppliersLoading || usersLoading;
+  const isLoading = articlesLoading || suppliersLoading || usersLoading || windowsLoading;
 
   const currentType = scheduleTypes.find((t) => t.value === formData.schedule_type);
 
@@ -362,14 +364,25 @@ export default function NewSchedulePage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Week Delivery <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
+            <select
               value={formData.week_delivery}
               onChange={(e) => setFormData({ ...formData, week_delivery: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-              placeholder="contoh: W01-2025, W02-2025"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all bg-white"
               required
-            />
+            >
+              <option value="">-- Pilih Week Delivery --</option>
+              {windows.map((w) => (
+                <option key={w} value={w}>{w}</option>
+              ))}
+            </select>
+            {windows.length === 0 && (
+              <p className="mt-1.5 text-xs text-amber-600 flex items-center gap-1">
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Belum ada data window. Tambah di halaman Settings.
+              </p>
+            )}
           </div>
 
           {/* Date Range */}

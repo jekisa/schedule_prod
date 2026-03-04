@@ -200,8 +200,8 @@ export default function Sidebar({ isOpen, onClose }) {
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-gray-900 animate-pulse" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-white tracking-tight">PT. GNP</h1>
-              <p className="text-xs text-gray-400 font-medium">Production Scheduler</p>
+              <h1 className="font-bold text-lg text-white tracking-tight">Production Scheduler App</h1>
+              <p className="text-xs text-gray-400 font-medium">.....</p>
             </div>
           </div>
         </div>

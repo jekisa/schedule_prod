@@ -306,7 +306,7 @@ export default function ReportPage() {
       <div className="report-print-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a' }}>PT. GNP — Production Scheduler</h1>
+            <h1 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a' }}>Production Scheduler App</h1>
             <p style={{ color: '#64748b', margin: '4px 0 0', fontSize: '13px' }}>Laporan Jadwal Produksi</p>
           </div>
           <div style={{ textAlign: 'right', fontSize: '11px', color: '#64748b' }}>
@@ -797,7 +797,7 @@ export default function ReportPage() {
 
       {/* ── Print footer ─────────────────────────────────────────────────────── */}
       <div className="report-print-footer">
-        Laporan dibuat otomatis oleh PT. GNP Production Scheduler · {printDate}
+        Laporan dibuat otomatis oleh Production Scheduler App · {printDate}
       </div>
     </div>
   );

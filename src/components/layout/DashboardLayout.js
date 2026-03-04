@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import MasterFAB from '@/components/ui/MasterFAB';
 
 export default function DashboardLayout({ children, title, subtitle }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,6 +32,8 @@ export default function DashboardLayout({ children, title, subtitle }) {
           {children}
         </main>
       </div>
+
+      <MasterFAB />
     </div>
   );
 }

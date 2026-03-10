@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Brand from '@/models/Brand';
 import { getUserFromToken } from '@/lib/auth';
+import { logAudit } from '@/lib/auditLog';
 
 export async function GET(request) {
   try {
@@ -36,6 +37,17 @@ export async function POST(request) {
     }
 
     const newBrand = await Brand.create({ brand_name: brand_name.trim() });
+
+    logAudit({
+      user,
+      action: 'CREATE',
+      entityType: 'Brand',
+      entityId: newBrand._id,
+      entityName: brand_name.trim(),
+      oldValues: null,
+      newValues: newBrand.toObject(),
+    });
+
     return NextResponse.json({ message: 'Brand berhasil ditambahkan', brandId: newBrand._id });
   } catch (error) {
     console.error('Create brand error:', error);
@@ -55,7 +67,19 @@ export async function PUT(request) {
     if (!id) return NextResponse.json({ error: 'ID harus diisi' }, { status: 400 });
     if (!brand_name?.trim()) return NextResponse.json({ error: 'Nama brand harus diisi' }, { status: 400 });
 
+    const oldDoc = await Brand.findById(id).lean();
     await Brand.findByIdAndUpdate(id, { brand_name: brand_name.trim() });
+
+    logAudit({
+      user,
+      action: 'UPDATE',
+      entityType: 'Brand',
+      entityId: id,
+      entityName: brand_name.trim(),
+      oldValues: oldDoc,
+      newValues: { brand_name: brand_name.trim() },
+    });
+
     return NextResponse.json({ message: 'Brand berhasil diupdate' });
   } catch (error) {
     console.error('Update brand error:', error);
@@ -74,7 +98,19 @@ export async function DELETE(request) {
 
     if (!id) return NextResponse.json({ error: 'ID harus diisi' }, { status: 400 });
 
+    const oldDoc = await Brand.findById(id).lean();
     await Brand.findByIdAndUpdate(id, { is_active: false });
+
+    logAudit({
+      user,
+      action: 'DELETE',
+      entityType: 'Brand',
+      entityId: id,
+      entityName: oldDoc?.brand_name,
+      oldValues: oldDoc,
+      newValues: null,
+    });
+
     return NextResponse.json({ message: 'Brand berhasil dihapus' });
   } catch (error) {
     console.error('Delete brand error:', error);

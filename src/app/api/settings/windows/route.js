@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Window from '@/models/Window';
 import { getUserFromToken } from '@/lib/auth';
+import { logAudit } from '@/lib/auditLog';
 
 export async function GET(request) {
   try {
@@ -36,6 +37,17 @@ export async function POST(request) {
     }
 
     const newWindow = await Window.create({ window_name: window_name.trim() });
+
+    logAudit({
+      user,
+      action: 'CREATE',
+      entityType: 'Window',
+      entityId: newWindow._id,
+      entityName: window_name.trim(),
+      oldValues: null,
+      newValues: newWindow.toObject(),
+    });
+
     return NextResponse.json({ message: 'Window berhasil ditambahkan', windowId: newWindow._id });
   } catch (error) {
     console.error('Create window error:', error);
@@ -55,7 +67,19 @@ export async function PUT(request) {
     if (!id) return NextResponse.json({ error: 'ID harus diisi' }, { status: 400 });
     if (!window_name?.trim()) return NextResponse.json({ error: 'Nama window harus diisi' }, { status: 400 });
 
+    const oldDoc = await Window.findById(id).lean();
     await Window.findByIdAndUpdate(id, { window_name: window_name.trim() });
+
+    logAudit({
+      user,
+      action: 'UPDATE',
+      entityType: 'Window',
+      entityId: id,
+      entityName: window_name.trim(),
+      oldValues: oldDoc,
+      newValues: { window_name: window_name.trim() },
+    });
+
     return NextResponse.json({ message: 'Window berhasil diupdate' });
   } catch (error) {
     console.error('Update window error:', error);
@@ -74,7 +98,19 @@ export async function DELETE(request) {
 
     if (!id) return NextResponse.json({ error: 'ID harus diisi' }, { status: 400 });
 
+    const oldDoc = await Window.findById(id).lean();
     await Window.findByIdAndUpdate(id, { is_active: false });
+
+    logAudit({
+      user,
+      action: 'DELETE',
+      entityType: 'Window',
+      entityId: id,
+      entityName: oldDoc?.window_name,
+      oldValues: oldDoc,
+      newValues: null,
+    });
+
     return NextResponse.json({ message: 'Window berhasil dihapus' });
   } catch (error) {
     console.error('Delete window error:', error);

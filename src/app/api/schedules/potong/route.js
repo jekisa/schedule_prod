@@ -7,6 +7,7 @@ import Supplier from '@/models/Supplier';
 import Article from '@/models/Article';
 import { getUserFromToken } from '@/lib/auth';
 import { calculateAutoStatus } from '@/lib/scheduleUtils';
+import { logAudit } from '@/lib/auditLog';
 
 const SCHEDULE_TYPE = 'potong';
 
@@ -166,6 +167,16 @@ export async function POST(request) {
       notes,
     });
 
+    logAudit({
+      user,
+      action: 'CREATE',
+      entityType: 'Schedule',
+      entityId: newSchedule._id,
+      entityName: `${SCHEDULE_TYPE} - ${article_name}`,
+      oldValues: null,
+      newValues: newSchedule.toObject(),
+    });
+
     return NextResponse.json({
       message: 'Schedule potong berhasil ditambahkan',
       scheduleId: newSchedule._id,
@@ -249,6 +260,8 @@ export async function PUT(request) {
       );
     }
 
+    const oldDoc = await Schedule.findById(id).lean();
+
     await Schedule.findByIdAndUpdate(id, {
       article_id,
       article_name,
@@ -261,6 +274,16 @@ export async function PUT(request) {
       end_date: new Date(end_date),
       status,
       notes,
+    });
+
+    logAudit({
+      user,
+      action: 'UPDATE',
+      entityType: 'Schedule',
+      entityId: id,
+      entityName: `${SCHEDULE_TYPE} - ${article_name || oldDoc?.article_name}`,
+      oldValues: oldDoc,
+      newValues: { article_id, article_name, description, quantity, pic_id, week_delivery, supplier_id, start_date, end_date, status, notes },
     });
 
     return NextResponse.json({ message: 'Schedule potong berhasil diupdate' });
@@ -301,7 +324,18 @@ export async function DELETE(request) {
       );
     }
 
+    const oldDoc = await Schedule.findById(id).lean();
     await Schedule.findByIdAndDelete(id);
+
+    logAudit({
+      user,
+      action: 'DELETE',
+      entityType: 'Schedule',
+      entityId: id,
+      entityName: `${SCHEDULE_TYPE} - ${oldDoc?.article_name}`,
+      oldValues: oldDoc,
+      newValues: null,
+    });
 
     return NextResponse.json({ message: 'Schedule potong berhasil dihapus' });
   } catch (error) {

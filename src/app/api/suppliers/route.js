@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Supplier from '@/models/Supplier';
 import { getUserFromToken } from '@/lib/auth';
+import { logAudit } from '@/lib/auditLog';
 
 // GET - Ambil semua suppliers atau filter by type
 export async function GET(request) {
@@ -64,6 +65,16 @@ export async function POST(request) {
       address,
     });
 
+    logAudit({
+      user,
+      action: 'CREATE',
+      entityType: 'Supplier',
+      entityId: newSupplier._id,
+      entityName: supplier_name,
+      oldValues: null,
+      newValues: newSupplier.toObject(),
+    });
+
     return NextResponse.json({
       message: 'Supplier berhasil ditambahkan',
       supplierId: newSupplier._id,
@@ -98,6 +109,8 @@ export async function PUT(request) {
       );
     }
 
+    const oldDoc = await Supplier.findById(id).lean();
+
     await Supplier.findByIdAndUpdate(id, {
       supplier_name,
       supplier_type,
@@ -105,6 +118,16 @@ export async function PUT(request) {
       phone,
       address,
       is_active,
+    });
+
+    logAudit({
+      user,
+      action: 'UPDATE',
+      entityType: 'Supplier',
+      entityId: id,
+      entityName: supplier_name || oldDoc?.supplier_name,
+      oldValues: oldDoc,
+      newValues: { supplier_name, supplier_type, contact_person, phone, address, is_active },
     });
 
     return NextResponse.json({ message: 'Supplier berhasil diupdate' });
@@ -138,8 +161,19 @@ export async function DELETE(request) {
       );
     }
 
+    const oldDoc = await Supplier.findById(id).lean();
     // Soft delete
     await Supplier.findByIdAndUpdate(id, { is_active: false });
+
+    logAudit({
+      user,
+      action: 'DELETE',
+      entityType: 'Supplier',
+      entityId: id,
+      entityName: oldDoc?.supplier_name,
+      oldValues: oldDoc,
+      newValues: null,
+    });
 
     return NextResponse.json({ message: 'Supplier berhasil dihapus' });
   } catch (error) {

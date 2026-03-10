@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import { getUserFromToken } from '@/lib/auth';
+import { logAudit } from '@/lib/auditLog';
 
 // GET - Ambil semua users
 export async function GET(request) {
@@ -75,6 +76,16 @@ export async function POST(request) {
       role: role || 'staff',
     });
 
+    logAudit({
+      user,
+      action: 'CREATE',
+      entityType: 'User',
+      entityId: newUser._id,
+      entityName: username,
+      oldValues: null,
+      newValues: { username, full_name, email, role: role || 'staff' },
+    });
+
     return NextResponse.json({
       message: 'User berhasil ditambahkan',
       userId: newUser._id,
@@ -122,6 +133,8 @@ export async function PUT(request) {
       );
     }
 
+    const oldDoc = await User.findById(id).select('-password').lean();
+
     // Update user
     const updateData = { username, full_name, email, role };
 
@@ -130,6 +143,16 @@ export async function PUT(request) {
     }
 
     await User.findByIdAndUpdate(id, updateData);
+
+    logAudit({
+      user,
+      action: 'UPDATE',
+      entityType: 'User',
+      entityId: id,
+      entityName: username || oldDoc?.username,
+      oldValues: oldDoc,
+      newValues: { username, full_name, email, role, password_changed: !!password },
+    });
 
     return NextResponse.json({ message: 'User berhasil diupdate' });
   } catch (error) {
@@ -162,7 +185,18 @@ export async function DELETE(request) {
       );
     }
 
+    const oldDoc = await User.findById(id).select('-password').lean();
     await User.findByIdAndDelete(id);
+
+    logAudit({
+      user,
+      action: 'DELETE',
+      entityType: 'User',
+      entityId: id,
+      entityName: oldDoc?.username,
+      oldValues: oldDoc,
+      newValues: null,
+    });
 
     return NextResponse.json({ message: 'User berhasil dihapus' });
   } catch (error) {

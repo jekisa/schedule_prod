@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Article from '@/models/Article';
 import { getUserFromToken } from '@/lib/auth';
+import { logAudit } from '@/lib/auditLog';
 
 // GET - Ambil semua articles
 export async function GET(request) {
@@ -62,6 +63,16 @@ export async function POST(request) {
       co_total: qty * price,
     });
 
+    logAudit({
+      user,
+      action: 'CREATE',
+      entityType: 'Article',
+      entityId: newArticle._id,
+      entityName: article_name,
+      oldValues: null,
+      newValues: newArticle.toObject(),
+    });
+
     return NextResponse.json({
       message: 'Artikel berhasil ditambahkan',
       articleId: newArticle._id,
@@ -99,6 +110,8 @@ export async function PUT(request) {
     const qty = Number(co_qty) || 0;
     const price = Number(co_price) || 0;
 
+    const oldDoc = await Article.findById(id).lean();
+
     await Article.findByIdAndUpdate(id, {
       article_name,
       description,
@@ -110,6 +123,16 @@ export async function PUT(request) {
       co_price: price,
       co_total: qty * price,
       is_active,
+    });
+
+    logAudit({
+      user,
+      action: 'UPDATE',
+      entityType: 'Article',
+      entityId: id,
+      entityName: article_name || oldDoc?.article_name,
+      oldValues: oldDoc,
+      newValues: { article_name, description, category, brand, buyer, week_delivery, co_qty: qty, co_price: price, co_total: qty * price, is_active },
     });
 
     return NextResponse.json({ message: 'Artikel berhasil diupdate' });
@@ -143,7 +166,18 @@ export async function DELETE(request) {
       );
     }
 
+    const oldDoc = await Article.findById(id).lean();
     await Article.findByIdAndUpdate(id, { is_active: false });
+
+    logAudit({
+      user,
+      action: 'DELETE',
+      entityType: 'Article',
+      entityId: id,
+      entityName: oldDoc?.article_name,
+      oldValues: oldDoc,
+      newValues: null,
+    });
 
     return NextResponse.json({ message: 'Artikel berhasil dihapus' });
   } catch (error) {

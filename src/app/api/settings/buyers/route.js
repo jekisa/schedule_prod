@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Buyer from '@/models/Buyer';
 import { getUserFromToken } from '@/lib/auth';
+import { logAudit } from '@/lib/auditLog';
 
 export async function GET(request) {
   try {
@@ -36,6 +37,17 @@ export async function POST(request) {
     }
 
     const newBuyer = await Buyer.create({ buyer_name: buyer_name.trim() });
+
+    logAudit({
+      user,
+      action: 'CREATE',
+      entityType: 'Buyer',
+      entityId: newBuyer._id,
+      entityName: buyer_name.trim(),
+      oldValues: null,
+      newValues: newBuyer.toObject(),
+    });
+
     return NextResponse.json({ message: 'Buyer berhasil ditambahkan', buyerId: newBuyer._id });
   } catch (error) {
     console.error('Create buyer error:', error);
@@ -55,7 +67,19 @@ export async function PUT(request) {
     if (!id) return NextResponse.json({ error: 'ID harus diisi' }, { status: 400 });
     if (!buyer_name?.trim()) return NextResponse.json({ error: 'Nama buyer harus diisi' }, { status: 400 });
 
+    const oldDoc = await Buyer.findById(id).lean();
     await Buyer.findByIdAndUpdate(id, { buyer_name: buyer_name.trim() });
+
+    logAudit({
+      user,
+      action: 'UPDATE',
+      entityType: 'Buyer',
+      entityId: id,
+      entityName: buyer_name.trim(),
+      oldValues: oldDoc,
+      newValues: { buyer_name: buyer_name.trim() },
+    });
+
     return NextResponse.json({ message: 'Buyer berhasil diupdate' });
   } catch (error) {
     console.error('Update buyer error:', error);
@@ -74,7 +98,19 @@ export async function DELETE(request) {
 
     if (!id) return NextResponse.json({ error: 'ID harus diisi' }, { status: 400 });
 
+    const oldDoc = await Buyer.findById(id).lean();
     await Buyer.findByIdAndUpdate(id, { is_active: false });
+
+    logAudit({
+      user,
+      action: 'DELETE',
+      entityType: 'Buyer',
+      entityId: id,
+      entityName: oldDoc?.buyer_name,
+      oldValues: oldDoc,
+      newValues: null,
+    });
+
     return NextResponse.json({ message: 'Buyer berhasil dihapus' });
   } catch (error) {
     console.error('Delete buyer error:', error);
